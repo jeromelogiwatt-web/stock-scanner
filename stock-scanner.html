@@ -123,7 +123,8 @@
 
 <main>
 
-  <details>
+  <!-- Section Configuration Webhook masquée (fonctionnelle en arrière-plan) -->
+  <details style="display:none">
     <summary>Configuration Webhook</summary>
     <div class="details-body">
       <div>
@@ -323,7 +324,6 @@
     const ref = currentRef;
     let valid = true;
 
-    // Validation employé
     if (!employe) {
       document.getElementById('employe-error').style.display = 'block';
       document.getElementById('employe-input').classList.add('error');
@@ -333,7 +333,6 @@
       document.getElementById('employe-input').classList.remove('error');
     }
 
-    // Validation chantier (sorties uniquement)
     if (type === 'sortie' && !chantier) {
       document.getElementById('chantier-error').style.display = 'block';
       document.getElementById('chantier-input').classList.add('error');
