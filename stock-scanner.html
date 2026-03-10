@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Stock Scanner — Extrabat</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #161920;
+      --surface2: #1e2230;
+      --border: #2a2f42;
+      --accent: #00e5a0;
+      --accent2: #ff4f6d;
+      --text: #e8ecf5;
+      --muted: #6b7280;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      padding: 18px 20px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: .4;
+    }
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.5px;
+      color: var(--text);
+    }
+    .logo span { color: var(--accent); }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .5; transform: scale(.8); }
+    }
+
+    /* ── MAIN ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── CONFIG SECTION ── */
+    .config-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .config-section label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .config-section input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .config-section input:focus {
+      border-color: var(--accent);
+    }
+    .config-section input::placeholder { color: var(--muted); }
+
+    /* ── MOVEMENT TYPE ── */
+    .movement-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .mvt-btn {
+      padding: 14px 10px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .mvt-btn.active-entree {
+      border-color: var(--accent);
+      background: rgba(0,229,160,.08);
+      color: var(--accent);
+    }
+    .mvt-btn.active-sortie {
+      border-color: var(--accent2);
+      background: rgba(255,79,109,.08);
+      color: var(--accent2);
+    }
+    .mvt-icon { font-size: 18px; }
+
+    /* ── SCANNER ZONE ── */
+    .scanner-zone {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      position: relative;
+    }
+    .scanner-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #scanner-state {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: var(--surface2);
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+    }
+    #scanner-state.active {
+      background: rgba(0,229,160,.1);
+      color: var(--accent);
+    }
+
+    #qr-reader {
+      width: 100%;
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Override html5-qrcode default styles */
+    #qr-reader video { border-radius: 0 !important; }
+    #qr-reader img { display: none !important; }
+    #qr-reader__scan_region { border: none !important; }
+    #qr-reader__dashboard { padding: 0 !important; background: transparent !important; }
+    #qr-reader__dashboard_section_csr button {
+      background: var(--accent) !important;
+      color: #000 !important;
+      border: none !important;
+      border-radius: 10px !important;
+      padding: 10px 20px !important;
+      font-family: 'Syne', sans-serif !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      margin: 12px !important;
+    }
+    #qr-reader__dashboard_section_swaplink { display: none !important; }
+    #qr-reader__status_span { color: var(--muted) !important; font-size: 12px !important; }
+
+    .scanner-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      gap: 12px;
+      color: var(--muted);
+    }
+    .qr-icon {
+      width: 64px; height: 64px;
+      opacity: .3;
+    }
+    .scanner-placeholder p {
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── START BUTTON ── */
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--accent);
+      color: #0d0f14;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: .5px;
+    }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px 24px 16px 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      animation: slideUp .25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .modal-ref {
+      font-family: 'Space Mono', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 20px;
+      word-break: break-all;
+    }
+    .modal-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .modal-type-badge.entree {
+      background: rgba(0,229,160,.12);
+      color: var(--accent);
+      border: 1px solid rgba(0,229,160,.2);
+    }
+    .modal-type-badge.sortie {
+      background: rgba(255,79,109,.12);
+      color: var(--accent2);
+      border: 1px solid rgba(255,79,109,.2);
+    }
+    .qty-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+    .qty-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .qty-btn {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 22px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+    .qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #qty-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-family: 'Space Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      outline: none;
+      transition: border-color .2s;
+    }
+    #qty-input:focus { border-color: var(--accent); }
+    .modal-note {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      width: 100%;
+      outline: none;
+      resize: none;
+      margin-bottom: 20px;
+      transition: border-color .2s;
+    }
+    .modal-note:focus { border-color: var(--accent); }
+    .modal-note::placeholder { color: var(--muted); }
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-confirm {
+      flex: 1;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      background: var(--accent);
+      color: #0d0f14;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-confirm.sortie { background: var(--accent2); color: #fff; }
+    .btn-confirm:hover { opacity: .9; }
+    .btn-cancel {
+      padding: 15px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-cancel:hover { color: var(--text); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      top: 20px; left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 200;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: var(--accent); color: var(--accent); }
+    .toast.error { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── LOG ── */
+    .log-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .log-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .log-count {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      background: var(--surface2);
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .log-empty {
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .log-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      animation: fadeIn .2s ease;
+    }
+    .log-item:last-child { border-bottom: none; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .log-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .log-dot.entree { background: var(--accent); }
+    .log-dot.sortie { background: var(--accent2); }
+    .log-dot.pending { background: var(--muted); animation: pulse 1s infinite; }
+    .log-info { flex: 1; min-width: 0; }
+    .log-ref {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .log-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .log-qty {
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .log-qty.entree { color: var(--accent); }
+    .log-qty.sortie { color: var(--accent2); }
+    .log-status {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+    .log-status.ok { background: rgba(0,229,160,.1); color: var(--accent); }
+    .log-status.err { background: rgba(255,79,109,.1); color: var(--accent2); }
+    .log-status.pending { background: var(--surface2); color: var(--muted); }
+
+    /* ── API CONFIG ── */
+    details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    summary {
+      padding: 14px 16px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: '⌄'; font-size: 16px; }
+    details[open] summary::after { content: '⌃'; }
+    .details-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .details-body label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .details-body input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 13px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .details-body input:focus { border-color: var(--accent); }
+    .api-note {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 8px 10px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Stock<span>Scan</span></div>
+  <div class="status-dot" id="status-dot"></div>
+</header>
+
+<main>
+
+  <!-- API Config -->
+  <details>
+    <summary>Configuration API Extrabat</summary>
+    <div class="details-body">
+      <div>
+        <label>Clé API (token)</label>
+        <input type="password" id="api-token" placeholder="Votre token Extrabat" />
+      </div>
+      <div>
+        <label>URL de base API</label>
+        <input type="text" id="api-url" placeholder="https://api.extrabat.com/v1" value="https://api.extrabat.com/v1" />
+      </div>
+      <div class="api-note">
+        ⚠️ Ces informations sont stockées localement en mémoire uniquement (non sauvegardées). À renseigner à chaque session.
+      </div>
+    </div>
+  </details>
+
+  <!-- Type de mouvement -->
+  <div class="config-section">
+    <label>Type de mouvement</label>
+    <div class="movement-toggle">
+      <button class="mvt-btn active-entree" id="btn-entree" onclick="setMvt('entree')">
+        <span class="mvt-icon">↓</span> Entrée
+      </button>
+      <button class="mvt-btn" id="btn-sortie" onclick="setMvt('sortie')">
+        <span class="mvt-icon">↑</span> Sortie
+      </button>
+    </div>
+  </div>
+
+  <!-- Scanner -->
+  <div class="scanner-zone">
+    <div class="scanner-header">
+      Scanner QR Code
+      <span id="scanner-state">En attente</span>
+    </div>
+    <div id="qr-reader">
+      <div class="scanner-placeholder">
+        <svg class="qr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="3" height="3"/>
+          <rect x="19" y="14" width="2" height="2"/>
+          <rect x="14" y="19" width="2" height="2"/>
+          <rect x="18" y="18" width="3" height="3"/>
+        </svg>
+        <p>Appuyez sur "Démarrer" pour activer la caméra</p>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-primary" id="btn-scan" onclick="toggleScanner()">▶ Démarrer le scanner</button>
+
+  <!-- Log des mouvements -->
+  <div class="log-section">
+    <div class="log-header">
+      Historique session
+      <span class="log-count" id="log-count">0</span>
+    </div>
+    <div id="log-list">
+      <div class="log-empty">Aucun mouvement enregistré</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Modal saisie quantité -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">Référence détectée</div>
+    <div class="modal-ref" id="modal-ref">—</div>
+    <div id="modal-type-badge" class="modal-type-badge entree">↓ Entrée stock</div>
+    <label class="qty-label">Quantité</label>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="adjustQty(-1)">−</button>
+      <input type="number" id="qty-input" value="1" min="1" max="9999" />
+      <button class="qty-btn" onclick="adjustQty(1)">+</button>
+    </div>
+    <textarea class="modal-note" id="modal-note" rows="2" placeholder="Note / commentaire (optionnel)"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-confirm" id="btn-confirm" onclick="confirmMouvement()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── STATE ──
+  let scanner = null;
+  let scanning = false;
+  let currentMvt = 'entree';
+  let currentRef = null;
+  let log = [];
+
+  // ── MOUVEMENT TYPE ──
+  function setMvt(type) {
+    currentMvt = type;
+    document.getElementById('btn-entree').className = 'mvt-btn' + (type === 'entree' ? ' active-entree' : '');
+    document.getElementById('btn-sortie').className = 'mvt-btn' + (type === 'sortie' ? ' active-sortie' : '');
+  }
+
+  // ── SCANNER ──
+  function toggleScanner() {
+    if (!scanning) startScanner();
+    else stopScanner();
+  }
+
+  function startScanner() {
+    const container = document.getElementById('qr-reader');
+    container.innerHTML = '';
+
+    scanner = new Html5Qrcode('qr-reader');
+
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      onScanSuccess,
+      () => {}
+    ).then(() => {
+      scanning = true;
+      document.getElementById('btn-scan').textContent = '⏹ Arrêter le scanner';
+      document.getElementById('scanner-state').textContent = 'Actif';
+      document.getElementById('scanner-state').className = 'active';
+    }).catch(err => {
+      showToast('❌ Caméra inaccessible : ' + err, 'error');
+      container.innerHTML = `<div class="scanner-placeholder"><p style="color:var(--accent2)">Impossible d'accéder à la caméra.<br>Vérifiez les permissions.</p></div>`;
+    });
+  }
+
+  function stopScanner() {
+    if (scanner) {
+      scanner.stop().then(() => {
+        scanner = null;
+        scanning = false;
+        document.getElementById('btn-scan').textContent = '▶ Démarrer le scanner';
+        document.getElementById('scanner-state').textContent = 'En attente';
+        document.getElementById('scanner-state').className = '';
+        document.getElementById('qr-reader').innerHTML = `
+          <div class="scanner-placeholder">
+            <svg class="qr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/>
+              <rect x="19" y="14" width="2" height="2"/><rect x="14" y="19" width="2" height="2"/>
+              <rect x="18" y="18" width="3" height="3"/>
+            </svg>
+            <p>Appuyez sur "Démarrer" pour activer la caméra</p>
+          </div>`;
+      });
+    }
+  }
+
+  function onScanSuccess(decodedText) {
+    // Pause scanner pendant la saisie
+    if (scanner) scanner.pause();
+    currentRef = decodedText;
+    openModal(decodedText);
+  }
+
+  // ── MODAL ──
+  function openModal(ref) {
+    document.getElementById('modal-ref').textContent = ref;
+    document.getElementById('qty-input').value = 1;
+    document.getElementById('modal-note').value = '';
+
+    const badge = document.getElementById('modal-type-badge');
+    const confirmBtn = document.getElementById('btn-confirm');
+    if (currentMvt === 'entree') {
+      badge.className = 'modal-type-badge entree';
+      badge.textContent = '↓ Entrée stock';
+      confirmBtn.className = 'btn-confirm';
+    } else {
+      badge.className = 'modal-type-badge sortie';
+      badge.textContent = '↑ Sortie stock';
+      confirmBtn.className = 'btn-confirm sortie';
+    }
+    document.getElementById('modal').classList.add('open');
+    setTimeout(() => document.getElementById('qty-input').focus(), 200);
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+    currentRef = null;
+    // Reprendre le scan
+    if (scanner && scanning) {
+      try { scanner.resume(); } catch(e) {}
+    }
+  }
+
+  function adjustQty(delta) {
+    const input = document.getElementById('qty-input');
+    const val = parseInt(input.value) || 1;
+    input.value = Math.max(1, val + delta);
+  }
+
+  // ── CONFIRMER MOUVEMENT ──
+  async function confirmMouvement() {
+    const qty = parseInt(document.getElementById('qty-input').value);
+    const note = document.getElementById('modal-note').value.trim();
+    const ref = currentRef;
+    const type = currentMvt;
+
+    if (!qty || qty < 1) {
+      showToast('⚠️ Quantité invalide', 'error');
+      return;
+    }
+
+    const entry = {
+      id: Date.now(),
+      ref,
+      type,
+      qty,
+      note,
+      time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      status: 'pending'
+    };
+
+    closeModal();
+    addLog(entry);
+    await envoyerExtrabat(entry);
+  }
+
+  // ── API EXTRABAT ──
+  async function envoyerExtrabat(entry) {
+    const token = document.getElementById('api-token').value.trim();
+    const baseUrl = document.getElementById('api-url').value.trim();
+
+    if (!token || !baseUrl) {
+      updateLogStatus(entry.id, 'err');
+      showToast('⚠️ Configurez votre token API Extrabat', 'error');
+      return;
+    }
+
+    // ── PAYLOAD À ADAPTER selon la doc API Extrabat ──
+    const payload = {
+      reference: entry.ref,
+      type_mouvement: entry.type === 'entree' ? 'E' : 'S',
+      quantite: entry.qty,
+      commentaire: entry.note || ''
+    };
+
+    try {
+      const res = await fetch(`${baseUrl}/stock/mouvement`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        updateLogStatus(entry.id, 'ok');
+        showToast(`✓ Mouvement enregistré (${entry.type === 'entree' ? '+' : '-'}${entry.qty})`, 'success');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        updateLogStatus(entry.id, 'err');
+        showToast(`❌ Erreur API ${res.status}: ${err.message || 'Inconnue'}`, 'error');
+        console.error('Extrabat API error:', res.status, err);
+      }
+    } catch (err) {
+      updateLogStatus(entry.id, 'err');
+      showToast('❌ Connexion API impossible', 'error');
+      console.error('Network error:', err);
+    }
+  }
+
+  // ── LOG ──
+  function addLog(entry) {
+    log.unshift(entry);
+    renderLog();
+  }
+
+  function updateLogStatus(id, status) {
+    const item = log.find(e => e.id === id);
+    if (item) item.status = status;
+    renderLog();
+  }
+
+  function renderLog() {
+    const container = document.getElementById('log-list');
+    document.getElementById('log-count').textContent = log.length;
+
+    if (log.length === 0) {
+      container.innerHTML = '<div class="log-empty">Aucun mouvement enregistré</div>';
+      return;
+    }
+
+    container.innerHTML = log.map(e => `
+      <div class="log-item">
+        <div class="log-dot ${e.status === 'pending' ? 'pending' : e.type}"></div>
+        <div class="log-info">
+          <div class="log-ref">${e.ref}</div>
+          <div class="log-meta">${e.time}${e.note ? ' · ' + e.note : ''}</div>
+        </div>
+        <div class="log-qty ${e.type}">${e.type === 'entree' ? '+' : '-'}${e.qty}</div>
+        <span class="log-status ${e.status === 'ok' ? 'ok' : e.status === 'err' ? 'err' : 'pending'}">
+          ${e.status === 'ok' ? '✓ OK' : e.status === 'err' ? '✗ Err' : '…'}
+        </span>
+      </div>
+    `).join('');
+  }
+
+  // ── TOAST ──
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = `toast ${type} show`;
+    setTimeout(() => toast.className = `toast ${type}`, 3000);
+  }
+
+  // ── KEYBOARD ──
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Enter' && document.getElementById('modal').classList.contains('open')) {
+      confirmMouvement();
+    }
+  });
+</script>
+</body>
+</html>
