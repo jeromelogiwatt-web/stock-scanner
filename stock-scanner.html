@@ -574,20 +574,16 @@
 
 <main>
 
-  <!-- API Config -->
+  <!-- Webhook Config -->
   <details>
-    <summary>Configuration API Extrabat</summary>
+    <summary>Configuration Webhook Make</summary>
     <div class="details-body">
       <div>
-        <label>Clé API (token)</label>
-        <input type="password" id="api-token" placeholder="Votre token Extrabat" />
-      </div>
-      <div>
-        <label>URL de base API</label>
-        <input type="text" id="api-url" placeholder="https://api.extrabat.com/v1" value="https://api.extrabat.com/v1" />
+        <label>URL Webhook Make.com</label>
+        <input type="text" id="api-url" value="https://hook.eu1.make.com/qxypml9m6i8azfq3437d3w8katucv842" />
       </div>
       <div class="api-note">
-        ⚠️ Ces informations sont stockées localement en mémoire uniquement (non sauvegardées). À renseigner à chaque session.
+        ✅ URL webhook Make préconfigurée. Modifiez uniquement si vous changez de scénario.
       </div>
     </div>
   </details>
@@ -799,47 +795,41 @@
     await envoyerExtrabat(entry);
   }
 
-  // ── API EXTRABAT ──
+  // ── WEBHOOK MAKE ──
   async function envoyerExtrabat(entry) {
-    const token = document.getElementById('api-token').value.trim();
-    const baseUrl = document.getElementById('api-url').value.trim();
+    const webhookUrl = document.getElementById('api-url').value.trim();
 
-    if (!token || !baseUrl) {
+    if (!webhookUrl) {
       updateLogStatus(entry.id, 'err');
-      showToast('⚠️ Configurez votre token API Extrabat', 'error');
+      showToast('⚠️ URL webhook manquante', 'error');
       return;
     }
 
-    // ── PAYLOAD À ADAPTER selon la doc API Extrabat ──
     const payload = {
       reference: entry.ref,
-      type_mouvement: entry.type === 'entree' ? 'E' : 'S',
+      type_mouvement: entry.type,
       quantite: entry.qty,
-      commentaire: entry.note || ''
+      commentaire: entry.note || '',
+      date: new Date().toISOString()
     };
 
     try {
-      const res = await fetch(`${baseUrl}/stock/mouvement`, {
+      const res = await fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       if (res.ok) {
         updateLogStatus(entry.id, 'ok');
-        showToast(`✓ Mouvement enregistré (${entry.type === 'entree' ? '+' : '-'}${entry.qty})`, 'success');
+        showToast(`✓ Envoyé vers Google Sheets (${entry.type === 'entree' ? '+' : '-'}${entry.qty})`, 'success');
       } else {
-        const err = await res.json().catch(() => ({}));
         updateLogStatus(entry.id, 'err');
-        showToast(`❌ Erreur API ${res.status}: ${err.message || 'Inconnue'}`, 'error');
-        console.error('Extrabat API error:', res.status, err);
+        showToast(`❌ Erreur webhook ${res.status}`, 'error');
       }
     } catch (err) {
       updateLogStatus(entry.id, 'err');
-      showToast('❌ Connexion API impossible', 'error');
+      showToast('❌ Connexion impossible', 'error');
       console.error('Network error:', err);
     }
   }
