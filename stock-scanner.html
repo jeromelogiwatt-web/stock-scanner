@@ -137,6 +137,16 @@
     .details-body input:focus { border-color: var(--accent); }
     .api-note { font-size: 11px; color: var(--muted); background: var(--surface2); border-radius: 8px; padding: 8px 10px; line-height: 1.5; }
     select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    /* SESSION TERMINEE */
+    .btn-session { width: 100%; padding: 16px; border-radius: var(--radius); border: 2px solid var(--accent2); background: transparent; color: var(--accent2); font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: all .2s; letter-spacing: .5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-session:hover { background: rgba(255,79,109,.08); }
+    .btn-session.inventaire { border-color: var(--accent3); color: var(--accent3); }
+    .btn-session.inventaire:hover { background: rgba(167,139,250,.08); }
+    .modal-confirm { background: var(--surface); border: 1px solid var(--border); border-radius: 24px 24px 16px 16px; padding: 28px 24px; width: 100%; max-width: 480px; animation: slideUp .25s ease; text-align: center; }
+    .modal-confirm h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .modal-confirm p { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+    .modal-confirm-actions { display: flex; gap: 10px; }
+
     /* LOGIN */
     .login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; gap: 24px; }
     .login-logo { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
@@ -154,6 +164,19 @@
   </style>
 </head>
 <body>
+
+<!-- MODAL CONFIRMATION FIN SESSION -->
+<div class="modal-overlay" id="modal-session">
+  <div class="modal-confirm">
+    <h3 id="session-title">🏁 Session terminée ?</h3>
+    <p id="session-desc">Vous êtes sur le point de clôturer la session.<br>Un CSV sera généré et envoyé à <strong>jerome@logiwatt.fr</strong>.</p>
+    <div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:20px;font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);" id="session-summary"></div>
+    <div class="modal-confirm-actions">
+      <button class="btn-cancel" onclick="fermerModalSession()">Annuler</button>
+      <button class="btn-confirm" id="btn-session-confirm" onclick="confirmerFinSession()">✓ Confirmer et envoyer</button>
+    </div>
+  </div>
+</div>
 
 <!-- LOGIN OVERLAY -->
 <div class="login-overlay" id="login-overlay">
@@ -185,7 +208,11 @@
         <label>URL Webhook Make.com (Inventaire)</label>
         <input type="text" id="api-url-inventaire" value="https://hook.eu1.make.com/qxypml9m6i8azfq3437d3w8katucv842" placeholder="URL webhook inventaire (peut être le même)" />
       </div>
-      <div class="api-note">✅ Les deux modes envoient vers Google Sheets via Make.</div>
+      <div>
+        <label>URL Webhook Fin de session (CSV + Email)</label>
+        <input type="text" id="api-url-session" placeholder="URL webhook fin de session Make" />
+      </div>
+      <div class="api-note">✅ Les deux modes envoient vers Google Sheets via Make. Le webhook fin de session déclenche la génération du CSV.</div>
     </div>
   </details>
 
@@ -235,6 +262,11 @@
   </div>
 
   <button class="btn-primary" id="btn-scan" onclick="toggleScanner()">▶ Démarrer le scanner</button>
+
+  <!-- BOUTON SESSION TERMINEE -->
+  <button class="btn-session" id="btn-session" onclick="demanderFinSession()">
+    🏁 Session terminée
+  </button>
 
   <!-- LOG -->
   <div class="log-section">
@@ -294,12 +326,17 @@
 
 <script>
   // ── LOGIN ──
-  const PASSWORD = 'Logiwatt47';
+  const PASSWORD_HASH = 'd2286153a5fe004254f478772f425e7dc48e5954b652839f1856ef2693ef304a';
 
-  function checkLogin() {
+  async function checkLogin() {
     const input = document.getElementById('login-input');
     const val = input.value;
-    if (val === PASSWORD) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(val);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    if (hashHex === PASSWORD_HASH) {
       document.getElementById('login-overlay').style.display = 'none';
       sessionStorage.setItem('logiwatt_auth', '1');
     } else {
@@ -553,6 +590,103 @@
     t.textContent = msg;
     t.className = `toast ${type} show`;
     setTimeout(() => t.className = `toast ${type}`, 3500);
+  }
+
+  // ── FIN DE SESSION ──
+  function demanderFinSession() {
+    if (log.length === 0) { showToast('⚠️ Aucun scan dans cette session', 'error'); return; }
+    
+    const nbScans = log.length;
+    const nbOk = log.filter(e => e.status === 'ok').length;
+    const mode = currentMode;
+    
+    const title = mode === 'inventaire' ? '📋 Clôturer l'inventaire ?' : '🏁 Clôturer la session ?';
+    const desc = mode === 'inventaire' 
+      ? `Vous êtes sur le point de clôturer l'inventaire.<br>Un CSV sera généré et envoyé à <strong>jerome@logiwatt.fr</strong>.`
+      : `Vous êtes sur le point de clôturer la session de mouvements.<br>Un CSV sera généré et envoyé à <strong>jerome@logiwatt.fr</strong>.`;
+    
+    document.getElementById('session-title').innerHTML = title;
+    document.getElementById('session-desc').innerHTML = desc;
+    document.getElementById('session-summary').innerHTML = 
+      `${nbScans} scan(s) enregistré(s) · ${nbOk} envoyé(s) avec succès<br>Mode : ${mode === 'inventaire' ? 'Inventaire' : 'Mouvements'}`;
+    
+    const confirmBtn = document.getElementById('btn-session-confirm');
+    confirmBtn.className = mode === 'inventaire' ? 'btn-confirm inventaire' : 'btn-confirm';
+    
+    document.getElementById('modal-session').classList.add('open');
+  }
+
+  function fermerModalSession() {
+    document.getElementById('modal-session').classList.remove('open');
+  }
+
+  async function confirmerFinSession() {
+    fermerModalSession();
+    const webhookUrl = document.getElementById('api-url-session').value.trim();
+    
+    if (!webhookUrl) {
+      showToast('⚠️ Configurez l'URL webhook fin de session dans les paramètres', 'error');
+      return;
+    }
+
+    showToast('📤 Génération du CSV en cours...', 'info');
+
+    const payload = {
+      type: 'fin_session',
+      mode: currentMode,
+      date: new Date().toISOString(),
+      nb_scans: log.length,
+      email: 'jerome@logiwatt.fr',
+      scans: log.map(e => ({
+        reference: e.ref,
+        type_mouvement: e.type,
+        quantite: e.qty,
+        employe: e.employe,
+        chantier: e.chantier || '',
+        commentaire: e.note || '',
+        date: e.time
+      }))
+    };
+
+    try {
+      const res = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        showToast('✅ Session clôturée — CSV envoyé par email !', 'success');
+        // Réinitialiser le log après envoi
+        setTimeout(() => {
+          if (confirm('Session clôturée avec succès. Réinitialiser pour une nouvelle session ?')) {
+            log = [];
+            renderLog();
+          }
+        }, 2000);
+      } else {
+        showToast('❌ Erreur lors de l'envoi', 'error');
+      }
+    } catch(err) {
+      showToast('❌ Connexion impossible', 'error');
+    }
+  }
+
+  // Mettre à jour le style du bouton session selon le mode
+  const origSetMode = setMode;
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('tab-mouvement').className = 'mode-tab' + (mode === 'mouvement' ? ' active-mouvement' : '');
+    document.getElementById('tab-inventaire').className = 'mode-tab' + (mode === 'inventaire' ? ' active-inventaire' : '');
+    document.getElementById('mouvement-options').style.display = mode === 'mouvement' ? 'block' : 'none';
+    document.getElementById('inventaire-banner').style.display = mode === 'inventaire' ? 'block' : 'none';
+    const btnSession = document.getElementById('btn-session');
+    if (mode === 'inventaire') {
+      btnSession.className = 'btn-session inventaire';
+      btnSession.innerHTML = '📋 Clôturer l'inventaire';
+    } else {
+      btnSession.className = 'btn-session';
+      btnSession.innerHTML = '🏁 Session terminée';
+    }
   }
 
   document.getElementById('login-input').addEventListener('keydown', e => {
