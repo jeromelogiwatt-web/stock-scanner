@@ -9,7 +9,7 @@
     @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
     :root {
       --bg: #0d0f14; --surface: #161920; --surface2: #1e2230;
-      --border: #2a2f42; --accent: #00e5a0; --accent2: #ff4f6d;
+      --border: #2a2f42; --accent: #00e5a0; --accent2: #ff4f6d; --accent3: #a78bfa;
       --text: #e8ecf5; --muted: #6b7280; --radius: 16px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -23,11 +23,23 @@
     main { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 16px; max-width: 480px; margin: 0 auto; width: 100%; }
     .config-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
     .config-section label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-    .movement-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* MODE TABS */
+    .mode-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0; }
+    .mode-tab { padding: 10px; border-radius: 10px; border: 2px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .2s; text-align: center; letter-spacing: .5px; text-transform: uppercase; }
+    .mode-tab.active-mouvement { border-color: var(--accent); background: rgba(0,229,160,.08); color: var(--accent); }
+    .mode-tab.active-inventaire { border-color: var(--accent3); background: rgba(167,139,250,.08); color: var(--accent3); }
+
+    /* MOUVEMENT TOGGLE */
+    .movement-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
     .mvt-btn { padding: 14px 10px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .mvt-btn.active-entree { border-color: var(--accent); background: rgba(0,229,160,.08); color: var(--accent); }
     .mvt-btn.active-sortie { border-color: var(--accent2); background: rgba(255,79,109,.08); color: var(--accent2); }
     .mvt-icon { font-size: 18px; }
+
+    /* INVENTAIRE BANNER */
+    .inventaire-banner { background: rgba(167,139,250,.08); border: 1px solid rgba(167,139,250,.2); border-radius: 10px; padding: 10px 14px; margin-top: 12px; font-size: 12px; color: var(--accent3); display: none; }
+
     .scanner-zone { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     .scanner-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; justify-content: space-between; }
     #scanner-state { font-size: 10px; padding: 3px 8px; border-radius: 20px; background: var(--surface2); color: var(--muted); font-family: 'Space Mono', monospace; }
@@ -46,15 +58,19 @@
     .btn-primary { width: 100%; padding: 16px; border-radius: var(--radius); border: none; background: var(--accent); color: #0d0f14; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: all .2s; letter-spacing: .5px; }
     .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
     .btn-primary:active { transform: translateY(0); }
+
+    /* MODAL */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(6px); z-index: 100; align-items: flex-end; justify-content: center; padding: 20px; }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 24px 24px 16px 16px; padding: 24px; width: 100%; max-width: 480px; animation: slideUp .25s ease; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 24px 24px 16px 16px; padding: 24px; width: 100%; max-width: 480px; animation: slideUp .25s ease; max-height: 90vh; overflow-y: auto; }
     @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .modal-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
     .modal-ref { font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 20px; word-break: break-all; }
+    .modal-ref.inventaire { color: var(--accent3); }
     .modal-type-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }
     .modal-type-badge.entree { background: rgba(0,229,160,.12); color: var(--accent); border: 1px solid rgba(0,229,160,.2); }
     .modal-type-badge.sortie { background: rgba(255,79,109,.12); color: var(--accent2); border: 1px solid rgba(255,79,109,.2); }
+    .modal-type-badge.inventaire { background: rgba(167,139,250,.12); color: var(--accent3); border: 1px solid rgba(167,139,250,.2); }
     .field-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
     .field-required { color: var(--accent2); }
     .qty-row { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
@@ -68,18 +84,23 @@
     .field-error { color: var(--accent2); font-size: 11px; margin-top: -12px; margin-bottom: 14px; display: none; }
     .modal-note { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-family: 'Syne', sans-serif; font-size: 13px; color: var(--text); width: 100%; outline: none; resize: none; margin-bottom: 20px; transition: border-color .2s; }
     .modal-note:focus { border-color: var(--accent); }
-    .modal-note::placeholder { color: var(--muted); }
-    .field-input::placeholder { color: var(--muted); }
+    .modal-note::placeholder, .field-input::placeholder { color: var(--muted); }
     .modal-actions { display: flex; gap: 10px; }
     .btn-confirm { flex: 1; padding: 15px; border-radius: 12px; border: none; background: var(--accent); color: #0d0f14; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; cursor: pointer; transition: all .2s; }
     .btn-confirm.sortie { background: var(--accent2); color: #fff; }
+    .btn-confirm.inventaire { background: var(--accent3); color: #fff; }
     .btn-confirm:hover { opacity: .9; }
     .btn-cancel { padding: 15px 18px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
     .btn-cancel:hover { color: var(--text); }
+
+    /* TOAST */
     .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 20px; font-size: 13px; font-weight: 600; z-index: 200; transition: transform .3s cubic-bezier(.34,1.56,.64,1); white-space: nowrap; display: flex; align-items: center; gap: 8px; }
     .toast.show { transform: translateX(-50%) translateY(0); }
     .toast.success { border-color: var(--accent); color: var(--accent); }
     .toast.error { border-color: var(--accent2); color: var(--accent2); }
+    .toast.info { border-color: var(--accent3); color: var(--accent3); }
+
+    /* LOG */
     .log-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     .log-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; justify-content: space-between; }
     .log-count { font-family: 'Space Mono', monospace; font-size: 10px; background: var(--surface2); padding: 3px 8px; border-radius: 20px; }
@@ -90,6 +111,7 @@
     .log-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .log-dot.entree { background: var(--accent); }
     .log-dot.sortie { background: var(--accent2); }
+    .log-dot.inventaire { background: var(--accent3); }
     .log-dot.pending { background: var(--muted); animation: pulse 1s infinite; }
     .log-info { flex: 1; min-width: 0; }
     .log-ref { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -97,10 +119,13 @@
     .log-qty { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; flex-shrink: 0; }
     .log-qty.entree { color: var(--accent); }
     .log-qty.sortie { color: var(--accent2); }
+    .log-qty.inventaire { color: var(--accent3); }
     .log-status { font-size: 10px; padding: 2px 7px; border-radius: 20px; flex-shrink: 0; }
     .log-status.ok { background: rgba(0,229,160,.1); color: var(--accent); }
     .log-status.err { background: rgba(255,79,109,.1); color: var(--accent2); }
     .log-status.pending { background: var(--surface2); color: var(--muted); }
+
+    /* DETAILS */
     details { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     summary { padding: 14px 16px; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); list-style: none; display: flex; align-items: center; justify-content: space-between; }
     summary::-webkit-details-marker { display: none; }
@@ -123,30 +148,48 @@
 
 <main>
 
-  <!-- Section Configuration Webhook masquée (fonctionnelle en arrière-plan) -->
-  <details style="display:none">
+  <details>
     <summary>Configuration Webhook</summary>
     <div class="details-body">
       <div>
-        <label>URL Webhook Make.com</label>
+        <label>URL Webhook Make.com (Mouvements)</label>
         <input type="text" id="api-url" value="https://hook.eu1.make.com/qxypml9m6i8azfq3437d3w8katucv842" />
       </div>
-      <div class="api-note">✅ Webhook Make préconfiguré. Les mouvements sont envoyés vers Google Sheets.</div>
+      <div>
+        <label>URL Webhook Make.com (Inventaire)</label>
+        <input type="text" id="api-url-inventaire" value="https://hook.eu1.make.com/qxypml9m6i8azfq3437d3w8katucv842" placeholder="URL webhook inventaire (peut être le même)" />
+      </div>
+      <div class="api-note">✅ Les deux modes envoient vers Google Sheets via Make.</div>
     </div>
   </details>
 
+  <!-- MODE SELECTOR -->
   <div class="config-section">
-    <label>Type de mouvement</label>
-    <div class="movement-toggle">
-      <button class="mvt-btn active-entree" id="btn-entree" onclick="setMvt('entree')">
-        <span class="mvt-icon">↓</span> Entrée
-      </button>
-      <button class="mvt-btn" id="btn-sortie" onclick="setMvt('sortie')">
-        <span class="mvt-icon">↑</span> Sortie
-      </button>
+    <label>Mode</label>
+    <div class="mode-tabs">
+      <button class="mode-tab active-mouvement" id="tab-mouvement" onclick="setMode('mouvement')">📦 Mouvement</button>
+      <button class="mode-tab" id="tab-inventaire" onclick="setMode('inventaire')">📋 Inventaire</button>
+    </div>
+
+    <!-- Sous-mode mouvement -->
+    <div id="mouvement-options">
+      <div class="movement-toggle">
+        <button class="mvt-btn active-entree" id="btn-entree" onclick="setMvt('entree')">
+          <span class="mvt-icon">↓</span> Entrée
+        </button>
+        <button class="mvt-btn" id="btn-sortie" onclick="setMvt('sortie')">
+          <span class="mvt-icon">↑</span> Sortie
+        </button>
+      </div>
+    </div>
+
+    <!-- Bannière inventaire -->
+    <div class="inventaire-banner" id="inventaire-banner">
+      📋 Mode inventaire actif — Saisissez la quantité physique réelle de chaque article scanné.
     </div>
   </div>
 
+  <!-- SCANNER -->
   <div class="scanner-zone">
     <div class="scanner-header">
       Scanner QR Code
@@ -167,6 +210,7 @@
 
   <button class="btn-primary" id="btn-scan" onclick="toggleScanner()">▶ Démarrer le scanner</button>
 
+  <!-- LOG -->
   <div class="log-section">
     <div class="log-header">
       Historique session
@@ -182,11 +226,11 @@
 <!-- Modal -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
-    <div class="modal-title">Référence détectée</div>
+    <div class="modal-title" id="modal-title">Référence détectée</div>
     <div class="modal-ref" id="modal-ref">—</div>
     <div id="modal-type-badge" class="modal-type-badge entree">↓ Entrée stock</div>
 
-    <!-- Employé (toujours visible) -->
+    <!-- Employé -->
     <label class="field-label">Employé <span class="field-required">*</span></label>
     <select id="employe-input" class="field-input">
       <option value="">— Sélectionnez votre nom —</option>
@@ -203,10 +247,10 @@
     </div>
 
     <!-- Quantité -->
-    <label class="field-label">Quantité</label>
+    <label class="field-label" id="qty-label">Quantité</label>
     <div class="qty-row">
       <button class="qty-btn" onclick="adjustQty(-1)">−</button>
-      <input type="number" id="qty-input" value="1" min="1" max="9999" />
+      <input type="number" id="qty-input" value="1" min="0" max="9999" />
       <button class="qty-btn" onclick="adjustQty(1)">+</button>
     </div>
 
@@ -226,15 +270,27 @@
   let scanner = null;
   let scanning = false;
   let currentMvt = 'entree';
+  let currentMode = 'mouvement'; // 'mouvement' ou 'inventaire'
   let currentRef = null;
   let log = [];
 
+  // ── MODE ──
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('tab-mouvement').className = 'mode-tab' + (mode === 'mouvement' ? ' active-mouvement' : '');
+    document.getElementById('tab-inventaire').className = 'mode-tab' + (mode === 'inventaire' ? ' active-inventaire' : '');
+    document.getElementById('mouvement-options').style.display = mode === 'mouvement' ? 'block' : 'none';
+    document.getElementById('inventaire-banner').style.display = mode === 'inventaire' ? 'block' : 'none';
+  }
+
+  // ── MOUVEMENT TYPE ──
   function setMvt(type) {
     currentMvt = type;
     document.getElementById('btn-entree').className = 'mvt-btn' + (type === 'entree' ? ' active-entree' : '');
     document.getElementById('btn-sortie').className = 'mvt-btn' + (type === 'sortie' ? ' active-sortie' : '');
   }
 
+  // ── SCANNER ──
   function toggleScanner() {
     if (!scanning) startScanner(); else stopScanner();
   }
@@ -252,7 +308,7 @@
       document.getElementById('btn-scan').textContent = '⏹ Arrêter le scanner';
       document.getElementById('scanner-state').textContent = 'Actif';
       document.getElementById('scanner-state').className = 'active';
-    }).catch(err => {
+    }).catch(() => {
       showToast('❌ Caméra inaccessible', 'error');
       container.innerHTML = `<div class="scanner-placeholder"><p style="color:var(--accent2)">Impossible d'accéder à la caméra.<br>Vérifiez les permissions.</p></div>`;
     });
@@ -276,6 +332,7 @@
     openModal(decodedText);
   }
 
+  // ── MODAL ──
   function openModal(ref) {
     document.getElementById('modal-ref').textContent = ref;
     document.getElementById('qty-input').value = 1;
@@ -289,17 +346,37 @@
 
     const badge = document.getElementById('modal-type-badge');
     const confirmBtn = document.getElementById('btn-confirm');
-    if (currentMvt === 'entree') {
-      badge.className = 'modal-type-badge entree';
-      badge.textContent = '↓ Entrée stock';
-      confirmBtn.className = 'btn-confirm';
+    const modalRef = document.getElementById('modal-ref');
+
+    if (currentMode === 'inventaire') {
+      document.getElementById('modal-title').textContent = 'Inventaire — Référence';
+      badge.className = 'modal-type-badge inventaire';
+      badge.textContent = '📋 Inventaire physique';
+      confirmBtn.className = 'btn-confirm inventaire';
+      confirmBtn.textContent = 'Enregistrer';
+      document.getElementById('qty-label').textContent = 'Quantité physique comptée';
       document.getElementById('chantier-group').style.display = 'none';
+      modalRef.className = 'modal-ref inventaire';
+      document.getElementById('qty-input').value = 0;
     } else {
-      badge.className = 'modal-type-badge sortie';
-      badge.textContent = '↑ Sortie stock';
-      confirmBtn.className = 'btn-confirm sortie';
-      document.getElementById('chantier-group').style.display = 'block';
+      document.getElementById('modal-title').textContent = 'Référence détectée';
+      document.getElementById('qty-label').textContent = 'Quantité';
+      confirmBtn.textContent = 'Confirmer';
+      modalRef.className = 'modal-ref';
+      document.getElementById('qty-input').value = 1;
+      if (currentMvt === 'entree') {
+        badge.className = 'modal-type-badge entree';
+        badge.textContent = '↓ Entrée stock';
+        confirmBtn.className = 'btn-confirm';
+        document.getElementById('chantier-group').style.display = 'none';
+      } else {
+        badge.className = 'modal-type-badge sortie';
+        badge.textContent = '↑ Sortie stock';
+        confirmBtn.className = 'btn-confirm sortie';
+        document.getElementById('chantier-group').style.display = 'block';
+      }
     }
+
     document.getElementById('modal').classList.add('open');
     setTimeout(() => document.getElementById('employe-input').focus(), 200);
   }
@@ -312,15 +389,16 @@
 
   function adjustQty(delta) {
     const input = document.getElementById('qty-input');
-    input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
+    const min = currentMode === 'inventaire' ? 0 : 1;
+    input.value = Math.max(min, (parseInt(input.value) || 0) + delta);
   }
 
+  // ── CONFIRMER ──
   async function confirmMouvement() {
     const employe = document.getElementById('employe-input').value.trim();
     const chantier = document.getElementById('chantier-input').value.trim();
     const qty = parseInt(document.getElementById('qty-input').value);
     const note = document.getElementById('modal-note').value.trim();
-    const type = currentMvt;
     const ref = currentRef;
     let valid = true;
 
@@ -333,7 +411,7 @@
       document.getElementById('employe-input').classList.remove('error');
     }
 
-    if (type === 'sortie' && !chantier) {
+    if (currentMode === 'mouvement' && currentMvt === 'sortie' && !chantier) {
       document.getElementById('chantier-error').style.display = 'block';
       document.getElementById('chantier-input').classList.add('error');
       valid = false;
@@ -342,8 +420,10 @@
       document.getElementById('chantier-input').classList.remove('error');
     }
 
-    if (!qty || qty < 1) { showToast('⚠️ Quantité invalide', 'error'); return; }
+    if (isNaN(qty) || qty < 0) { showToast('⚠️ Quantité invalide', 'error'); return; }
     if (!valid) return;
+
+    const type = currentMode === 'inventaire' ? 'inventaire' : currentMvt;
 
     const entry = {
       id: Date.now(), ref, type, qty,
@@ -357,8 +437,12 @@
     await envoyerWebhook(entry);
   }
 
+  // ── WEBHOOK ──
   async function envoyerWebhook(entry) {
-    const webhookUrl = document.getElementById('api-url').value.trim();
+    const urlMvt = document.getElementById('api-url').value.trim();
+    const urlInv = document.getElementById('api-url-inventaire').value.trim();
+    const webhookUrl = entry.type === 'inventaire' ? (urlInv || urlMvt) : urlMvt;
+
     if (!webhookUrl) { updateLogStatus(entry.id, 'err'); showToast('⚠️ URL webhook manquante', 'error'); return; }
 
     const payload = {
@@ -368,7 +452,7 @@
       employe: entry.employe,
       chantier: entry.chantier || '',
       commentaire: entry.note || '',
-      date: new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(',', '')
+      date: new Date().toISOString()
     };
 
     try {
@@ -379,7 +463,10 @@
       });
       if (res.ok) {
         updateLogStatus(entry.id, 'ok');
-        showToast(`✓ Envoyé — ${entry.employe} (${entry.type === 'entree' ? '+' : '-'}${entry.qty})`, 'success');
+        const msg = entry.type === 'inventaire'
+          ? `📋 Inventaire — ${entry.ref} : ${entry.qty} unités`
+          : `✓ ${entry.employe} (${entry.type === 'entree' ? '+' : '-'}${entry.qty})`;
+        showToast(msg, entry.type === 'inventaire' ? 'info' : 'success');
       } else {
         updateLogStatus(entry.id, 'err');
         showToast(`❌ Erreur webhook ${res.status}`, 'error');
@@ -390,6 +477,7 @@
     }
   }
 
+  // ── LOG ──
   function addLog(entry) { log.unshift(entry); renderLog(); }
   function updateLogStatus(id, status) { const e = log.find(e => e.id === id); if (e) e.status = status; renderLog(); }
 
@@ -402,18 +490,19 @@
         <div class="log-dot ${e.status === 'pending' ? 'pending' : e.type}"></div>
         <div class="log-info">
           <div class="log-ref">${e.ref}</div>
-          <div class="log-meta">${e.employe} · ${e.time}${e.chantier ? ' · ' + e.chantier : ''}${e.note ? ' · ' + e.note : ''}</div>
+          <div class="log-meta">${e.employe} · ${e.time}${e.type === 'inventaire' ? ' · inventaire' : ''}${e.chantier ? ' · ' + e.chantier : ''}${e.note ? ' · ' + e.note : ''}</div>
         </div>
-        <div class="log-qty ${e.type}">${e.type === 'entree' ? '+' : '-'}${e.qty}</div>
+        <div class="log-qty ${e.type}">${e.type === 'entree' ? '+' : e.type === 'sortie' ? '-' : '='}${e.qty}</div>
         <span class="log-status ${e.status === 'ok' ? 'ok' : e.status === 'err' ? 'err' : 'pending'}">${e.status === 'ok' ? '✓ OK' : e.status === 'err' ? '✗ Err' : '…'}</span>
       </div>`).join('');
   }
 
+  // ── TOAST ──
   function showToast(msg, type = 'success') {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.className = `toast ${type} show`;
-    setTimeout(() => t.className = `toast ${type}`, 3000);
+    setTimeout(() => t.className = `toast ${type}`, 3500);
   }
 
   document.addEventListener('keydown', e => {
