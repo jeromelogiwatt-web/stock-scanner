@@ -326,17 +326,14 @@
 
 <script>
   // ── LOGIN ──
-  const PASSWORD_HASH = 'd2286153a5fe004254f478772f425e7dc48e5954b652839f1856ef2693ef304a';
+  const PASSWORD_HASH = 'TG9naXdhdHQ0Nw==';
 
-  async function checkLogin() {
+  function checkLogin() {
     const input = document.getElementById('login-input');
     const val = input.value;
-    const encoder = new TextEncoder();
-    const data = encoder.encode(val);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    if (hashHex === PASSWORD_HASH) {
+    // Hash simple via btoa pour compatibilité mobile
+    const encoded = btoa(unescape(encodeURIComponent(val)));
+    if (encoded === PASSWORD_HASH) {
       document.getElementById('login-overlay').style.display = 'none';
       sessionStorage.setItem('logiwatt_auth', '1');
     } else {
@@ -600,7 +597,7 @@
     const nbOk = log.filter(e => e.status === 'ok').length;
     const mode = currentMode;
     
-    const title = mode === 'inventaire' ? '📋 Clôturer l'inventaire ?' : '🏁 Clôturer la session ?';
+        const title = mode === "inventaire" ? "📋 Clôturer inventaire ?" : "🏁 Clôturer la session ?";
     const desc = mode === 'inventaire' 
       ? `Vous êtes sur le point de clôturer l'inventaire.<br>Un CSV sera généré et envoyé à <strong>jerome@logiwatt.fr</strong>.`
       : `Vous êtes sur le point de clôturer la session de mouvements.<br>Un CSV sera généré et envoyé à <strong>jerome@logiwatt.fr</strong>.`;
@@ -625,7 +622,7 @@
     const webhookUrl = document.getElementById('api-url-session').value.trim();
     
     if (!webhookUrl) {
-      showToast('⚠️ Configurez l'URL webhook fin de session dans les paramètres', 'error');
+      showToast("⚠️ Configurez l'URL webhook fin de session dans les paramètres", "error");
       return;
     }
 
@@ -658,13 +655,13 @@
         showToast('✅ Session clôturée — CSV envoyé par email !', 'success');
         // Réinitialiser le log après envoi
         setTimeout(() => {
-          if (confirm('Session clôturée avec succès. Réinitialiser pour une nouvelle session ?')) {
+          if (confirm('Session cloturee. Reinitialiser pour une nouvelle session ?')) {
             log = [];
             renderLog();
           }
         }, 2000);
       } else {
-        showToast('❌ Erreur lors de l'envoi', 'error');
+        showToast("❌ Erreur lors de l'envoi", "error");
       }
     } catch(err) {
       showToast('❌ Connexion impossible', 'error');
@@ -682,7 +679,7 @@
     const btnSession = document.getElementById('btn-session');
     if (mode === 'inventaire') {
       btnSession.className = 'btn-session inventaire';
-      btnSession.innerHTML = '📋 Clôturer l'inventaire';
+      btnSession.innerHTML = '📋 Clôturer inventaire';
     } else {
       btnSession.className = 'btn-session';
       btnSession.innerHTML = '🏁 Session terminée';
