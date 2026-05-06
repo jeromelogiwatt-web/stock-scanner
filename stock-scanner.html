@@ -183,10 +183,12 @@
   <div class="login-logo">Stock<span>Scan</span></div>
   <p class="login-subtitle">Accès réservé — Logiwatt</p>
   <div class="login-box">
-    <label class="login-label">Mot de passe</label>
-    <input type="password" class="login-input" id="login-input" placeholder="••••••••" />
-    <div class="login-error" id="login-error">⚠️ Mot de passe incorrect</div>
-    <button class="login-btn" onclick="checkLogin()">Accéder</button>
+    <label class="login-label">Identifiant</label>
+    <input type="text" class="login-input" id="login-id" placeholder="Votre identifiant" style="letter-spacing:normal;" autocomplete="username" />
+    <label class="login-label" style="margin-top:12px;">Mot de passe</label>
+    <input type="password" class="login-input" id="login-pwd" placeholder="••••••••" autocomplete="current-password" />
+    <div class="login-error" id="login-error">⚠️ Identifiant ou mot de passe incorrect</div>
+    <button class="login-btn" id="login-btn" onclick="checkLogin()">Accéder</button>
   </div>
 </div>
 
@@ -209,8 +211,8 @@
         <input type="text" id="api-url-inventaire" value="https://hook.eu1.make.com/qxypml9m6i8azfq3437d3w8katucv842" placeholder="URL webhook inventaire (peut être le même)" />
       </div>
       <div>
-        <label>URL Webhook Fin de session (CSV + Email)</label>
-        <input type="text" id="api-url-session" placeholder="URL webhook fin de session Make" />
+        <label>URL Apps Script (CSV + Email)</label>
+        <input type="text" id="api-url-session" value="https://script.google.com/macros/s/AKfycbz1ijuljinsV36ZUjQCtlFDsEmRmkS7zZ6bCF4vAyt4Rqe4CFGsy-OmneQwSqPmdWl-/exec" />
       </div>
       <div class="api-note">✅ Les deux modes envoient vers Google Sheets via Make. Le webhook fin de session déclenche la génération du CSV.</div>
     </div>
@@ -288,14 +290,16 @@
     <div class="modal-ref" id="modal-ref">—</div>
     <div id="modal-type-badge" class="modal-type-badge entree">↓ Entrée stock</div>
 
-    <!-- Employé -->
-    <label class="field-label">Employé <span class="field-required">*</span></label>
-    <select id="employe-input" class="field-input">
-      <option value="">— Sélectionnez votre nom —</option>
-      <option value="Jérôme Caritte">Jérôme Caritte</option>
-      <option value="Richard Doste">Richard Doste</option>
-    </select>
-    <div class="field-error" id="employe-error">⚠️ Veuillez sélectionner votre nom.</div>
+    <!-- Employé connecté -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:16px;">👤</span>
+      <div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Employé connecté</div>
+        <div style="font-size:14px;font-weight:700;color:var(--accent);" id="employe-display">—</div>
+      </div>
+    </div>
+    <input type="hidden" id="employe-input" />
+    <div class="field-error" id="employe-error">⚠️ Erreur employé.</div>
 
     <!-- Chantier (sorties uniquement) -->
     <div id="chantier-group" style="display:none;">
@@ -326,32 +330,88 @@
 
 <script>
   // ── LOGIN ──
-  const PASSWORD_HASH = 'TG9naXdhdHQ0Nw==';
+  const APPS_SCRIPT_URL = document.getElementById('api-url-session') 
+    ? document.getElementById('api-url-session').value 
+    : '';
+  
+  let inactivityTimer = null;
+  const INACTIVITY_DELAY = 10 * 60 * 1000; // 10 minutes
 
-  function checkLogin() {
-    const input = document.getElementById('login-input');
-    const val = input.value;
-    // Hash simple via btoa pour compatibilité mobile
-    const encoded = btoa(unescape(encodeURIComponent(val)));
-    if (encoded === PASSWORD_HASH) {
-      document.getElementById('login-overlay').style.display = 'none';
-      sessionStorage.setItem('logiwatt_auth', '1');
-    } else {
-      input.classList.add('error');
-      document.getElementById('login-error').style.display = 'block';
-      input.value = '';
-      setTimeout(() => input.classList.remove('error'), 400);
+  function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(deconnecter, INACTIVITY_DELAY);
+  }
+
+  function deconnecter() {
+    sessionStorage.removeItem('logiwatt_auth');
+    sessionStorage.removeItem('logiwatt_user');
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('login-id').value = '';
+    document.getElementById('login-pwd').value = '';
+    document.getElementById('login-error').style.display = 'none';
+    if (scanner && scanning) stopScanner();
+    showToast('Session expirée — reconnectez-vous', 'error');
+  }
+
+  // Écouter toute activité pour réinitialiser le timer
+  ['click','touchstart','keydown','scroll'].forEach(evt => {
+    document.addEventListener(evt, resetInactivityTimer, true);
+  });
+
+  async function checkLogin() {
+    const id = document.getElementById('login-id').value.trim();
+    const pwd = document.getElementById('login-pwd').value.trim();
+    const btn = document.getElementById('login-btn');
+    const errorEl = document.getElementById('login-error');
+
+    if (!id || !pwd) {
+      errorEl.textContent = '⚠️ Remplissez tous les champs';
+      errorEl.style.display = 'block';
+      return;
     }
+
+    btn.textContent = 'Vérification...';
+    btn.disabled = true;
+    errorEl.style.display = 'none';
+
+    try {
+      const appsScriptUrl = document.getElementById('api-url-session').value.trim();
+      const url = appsScriptUrl + '?action=login&id=' + encodeURIComponent(id) + '&pwd=' + encodeURIComponent(pwd);
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.success) {
+        sessionStorage.setItem('logiwatt_auth', '1');
+        sessionStorage.setItem('logiwatt_user', data.nom);
+        document.getElementById('login-overlay').style.display = 'none';
+        resetInactivityTimer();
+        // Pré-sélectionner l'employé dans le modal
+        currentEmploye = data.nom;
+      } else {
+        errorEl.textContent = '⚠️ ' + (data.message || 'Identifiant ou mot de passe incorrect');
+        errorEl.style.display = 'block';
+        document.getElementById('login-pwd').value = '';
+      }
+    } catch(err) {
+      errorEl.textContent = '⚠️ Connexion impossible — vérifiez votre réseau';
+      errorEl.style.display = 'block';
+    }
+
+    btn.textContent = 'Accéder';
+    btn.disabled = false;
   }
 
   // Vérifier si déjà connecté dans cette session
   window.addEventListener('load', () => {
     if (sessionStorage.getItem('logiwatt_auth') === '1') {
       document.getElementById('login-overlay').style.display = 'none';
+      currentEmploye = sessionStorage.getItem('logiwatt_user') || '';
+      resetInactivityTimer();
     }
   });
 
   let scanner = null;
+  let currentEmploye = '';
   let scanning = false;
   let currentMvt = 'entree';
   let currentMode = 'mouvement'; // 'mouvement' ou 'inventaire'
@@ -421,11 +481,11 @@
     document.getElementById('modal-ref').textContent = ref;
     document.getElementById('qty-input').value = 1;
     document.getElementById('modal-note').value = '';
-    document.getElementById('employe-input').value = '';
+    document.getElementById('employe-input').value = currentEmploye;
+    document.getElementById('employe-display').textContent = currentEmploye || '—';
     document.getElementById('chantier-input').value = '';
     document.getElementById('employe-error').style.display = 'none';
     document.getElementById('chantier-error').style.display = 'none';
-    document.getElementById('employe-input').classList.remove('error');
     document.getElementById('chantier-input').classList.remove('error');
 
     const badge = document.getElementById('modal-type-badge');
@@ -479,7 +539,7 @@
 
   // ── CONFIRMER ──
   async function confirmMouvement() {
-    const employe = document.getElementById('employe-input').value.trim();
+    const employe = currentEmploye;
     const chantier = document.getElementById('chantier-input').value.trim();
     const qty = parseInt(document.getElementById('qty-input').value);
     const note = document.getElementById('modal-note').value.trim();
@@ -487,12 +547,8 @@
     let valid = true;
 
     if (!employe) {
-      document.getElementById('employe-error').style.display = 'block';
-      document.getElementById('employe-input').classList.add('error');
-      valid = false;
-    } else {
-      document.getElementById('employe-error').style.display = 'none';
-      document.getElementById('employe-input').classList.remove('error');
+      showToast('Erreur : aucun employé connecté', 'error');
+      return;
     }
 
     if (currentMode === 'mouvement' && currentMvt === 'sortie' && !chantier) {
@@ -646,25 +702,23 @@
     };
 
     try {
-      const res = await fetch(webhookUrl, {
+      // no-cors car Apps Script ne supporte pas CORS
+      // L'email est quand meme envoye meme sans reponse lisible
+      await fetch(webhookUrl, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        showToast('✅ Session clôturée — CSV envoyé par email !', 'success');
-        // Réinitialiser le log après envoi
-        setTimeout(() => {
-          if (confirm('Session cloturee. Reinitialiser pour une nouvelle session ?')) {
-            log = [];
-            renderLog();
-          }
-        }, 2000);
-      } else {
-        showToast("❌ Erreur lors de l'envoi", "error");
-      }
+      showToast('Session cloturee - email en cours envoi !', 'success');
+      setTimeout(() => {
+        if (confirm('Session cloturee. Reinitialiser pour une nouvelle session ?')) {
+          log = [];
+          renderLog();
+        }
+      }, 2000);
     } catch(err) {
-      showToast('❌ Connexion impossible', 'error');
+      showToast('Connexion impossible', 'error');
     }
   }
 
@@ -686,8 +740,11 @@
     }
   }
 
-  document.getElementById('login-input').addEventListener('keydown', e => {
+  document.getElementById('login-pwd').addEventListener('keydown', e => {
     if (e.key === 'Enter') checkLogin();
+  });
+  document.getElementById('login-id').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('login-pwd').focus();
   });
 
   document.addEventListener('keydown', e => {
