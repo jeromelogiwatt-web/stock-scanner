@@ -26,7 +26,7 @@
 
     /* MODE TABS */
     .mode-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 0; }
-    .mode-tab { padding: 10px; border-radius: 10px; border: 2px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .2s; text-align: center; letter-spacing: .5px; text-transform: uppercase; }
+    .mode-tab { padding: 10px 6px; border-radius: 10px; border: 2px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; transition: all .2s; text-align: center; letter-spacing: 0px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mode-tab.active-mouvement { border-color: var(--accent); background: rgba(0,229,160,.08); color: var(--accent); }
     .mode-tab.active-inventaire { border-color: var(--accent3); background: rgba(167,139,250,.08); color: var(--accent3); }
 
@@ -137,9 +137,35 @@
     .details-body input:focus { border-color: var(--accent); }
     .api-note { font-size: 11px; color: var(--muted); background: var(--surface2); border-radius: 8px; padding: 8px 10px; line-height: 1.5; }
     select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    /* LOGIN */
+    .login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; gap: 24px; }
+    .login-logo { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+    .login-logo span { color: var(--accent); }
+    .login-subtitle { font-size: 13px; color: var(--muted); text-align: center; margin-top: -16px; }
+    .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px; width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; }
+    .login-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .login-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; font-family: 'Space Mono', monospace; font-size: 16px; color: var(--text); outline: none; transition: border-color .2s; text-align: center; letter-spacing: 3px; }
+    .login-input:focus { border-color: var(--accent); }
+    .login-input.error { border-color: var(--accent2); animation: shake .3s; }
+    .login-error { font-size: 12px; color: var(--accent2); text-align: center; display: none; }
+    .login-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--accent); color: #0d0f14; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: all .2s; }
+    .login-btn:hover { opacity: .9; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
   </style>
 </head>
 <body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-logo">Stock<span>Scan</span></div>
+  <p class="login-subtitle">Accès réservé — Logiwatt</p>
+  <div class="login-box">
+    <label class="login-label">Mot de passe</label>
+    <input type="password" class="login-input" id="login-input" placeholder="••••••••" />
+    <div class="login-error" id="login-error">⚠️ Mot de passe incorrect</div>
+    <button class="login-btn" onclick="checkLogin()">Accéder</button>
+  </div>
+</div>
 
 <header>
   <div class="logo">Stock<span>Scan</span></div>
@@ -267,6 +293,30 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  // ── LOGIN ──
+  const PASSWORD = 'Logiwatt47';
+
+  function checkLogin() {
+    const input = document.getElementById('login-input');
+    const val = input.value;
+    if (val === PASSWORD) {
+      document.getElementById('login-overlay').style.display = 'none';
+      sessionStorage.setItem('logiwatt_auth', '1');
+    } else {
+      input.classList.add('error');
+      document.getElementById('login-error').style.display = 'block';
+      input.value = '';
+      setTimeout(() => input.classList.remove('error'), 400);
+    }
+  }
+
+  // Vérifier si déjà connecté dans cette session
+  window.addEventListener('load', () => {
+    if (sessionStorage.getItem('logiwatt_auth') === '1') {
+      document.getElementById('login-overlay').style.display = 'none';
+    }
+  });
+
   let scanner = null;
   let scanning = false;
   let currentMvt = 'entree';
@@ -504,6 +554,10 @@
     t.className = `toast ${type} show`;
     setTimeout(() => t.className = `toast ${type}`, 3500);
   }
+
+  document.getElementById('login-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkLogin();
+  });
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeModal();
