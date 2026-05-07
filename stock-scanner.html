@@ -383,10 +383,12 @@
       if (data.success) {
         sessionStorage.setItem('logiwatt_auth', '1');
         sessionStorage.setItem('logiwatt_user', data.nom);
+        sessionStorage.setItem('logiwatt_role', data.role || 'utilisateur');
         document.getElementById('login-overlay').style.display = 'none';
         resetInactivityTimer();
-        // Pré-sélectionner l'employé dans le modal
         currentEmploye = data.nom;
+        currentRole = data.role || 'utilisateur';
+        appliquerRole();
       } else {
         errorEl.textContent = '⚠️ ' + (data.message || 'Identifiant ou mot de passe incorrect');
         errorEl.style.display = 'block';
@@ -413,13 +415,16 @@
     if (sessionStorage.getItem('logiwatt_auth') === '1') {
       document.getElementById('login-overlay').style.display = 'none';
       currentEmploye = sessionStorage.getItem('logiwatt_user') || '';
+      currentRole = sessionStorage.getItem('logiwatt_role') || 'utilisateur';
       resetInactivityTimer();
+      appliquerRole();
     }
     */
   });
 
   let scanner = null;
   let currentEmploye = '';
+  let currentRole = 'utilisateur';
   let scanning = false;
   let currentMvt = 'entree';
   let currentMode = 'mouvement'; // 'mouvement' ou 'inventaire'
