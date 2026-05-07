@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Stock Scanner — Extrabat</title>
+  <title>StockScan — Logiwatt</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#00e5a0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="StockScan">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
@@ -819,6 +825,15 @@
   document.getElementById('login-id').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('login-pwd').focus();
   });
+
+  // ── SERVICE WORKER (PWA) ──
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('SW enregistré'))
+        .catch(err => console.log('SW erreur:', err));
+    });
+  }
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeModal();
