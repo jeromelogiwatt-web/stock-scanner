@@ -137,6 +137,12 @@
     .details-body input:focus { border-color: var(--accent); }
     .api-note { font-size: 11px; color: var(--muted); background: var(--surface2); border-radius: 8px; padding: 8px 10px; line-height: 1.5; }
     select.field-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    /* ADMIN */
+    .admin-zone { display: none; }
+    .btn-admin { width: 100%; padding: 14px; border-radius: var(--radius); border: 1px solid var(--accent3); background: rgba(167,139,250,.08); color: var(--accent3); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-admin:hover { background: rgba(167,139,250,.15); }
+    .btn-admin:disabled { opacity: .4; cursor: not-allowed; }
+
     /* SESSION TERMINEE */
     .btn-session { width: 100%; padding: 16px; border-radius: var(--radius); border: 2px solid var(--accent2); background: transparent; color: var(--accent2); font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: all .2s; letter-spacing: .5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-session:hover { background: rgba(255,79,109,.08); }
@@ -277,6 +283,13 @@
     🏁 Session terminée
   </button>
 
+  <!-- ZONE ADMIN -->
+  <div class="admin-zone" id="admin-zone">
+    <button class="btn-admin" id="btn-csv" onclick="envoyerCSVMaintenant()">
+      📧 Envoyer le CSV maintenant
+    </button>
+  </div>
+
   <!-- LOG -->
   <div class="log-section">
     <div class="log-header">
@@ -365,6 +378,31 @@
     document.addEventListener(evt, resetInactivityTimer, true);
   });
 
+  // ── ENVOI CSV ADMIN ──
+  async function envoyerCSVMaintenant() {
+    const btn = document.getElementById('btn-csv');
+    btn.disabled = true;
+    btn.textContent = '⏳ Envoi en cours...';
+
+    const appsScriptUrl = document.getElementById('api-url-session').value.trim();
+    const formData = new FormData();
+    formData.append('action', 'envoyer_csv');
+
+    try {
+      await fetch(appsScriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: formData
+      });
+      showToast('CSV envoyé à jerome@logiwatt.fr !', 'success');
+    } catch(err) {
+      showToast('Erreur envoi CSV', 'error');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '📧 Envoyer le CSV maintenant';
+  }
+
   // ── TOGGLE MOT DE PASSE ──
   function togglePwd() {
     const input = document.getElementById('login-pwd');
@@ -382,12 +420,15 @@
   function appliquerRole() {
     const tabInventaire = document.getElementById('tab-inventaire');
     const tabMouvement  = document.getElementById('tab-mouvement');
+    const adminZone     = document.getElementById('admin-zone');
     if (currentRole === 'admin') {
       tabInventaire.style.display = 'block';
       tabMouvement.style.gridColumn = '';
+      adminZone.style.display = 'block';
     } else {
       tabInventaire.style.display = 'none';
       tabMouvement.style.gridColumn = '1 / -1';
+      adminZone.style.display = 'none';
       if (currentMode === 'inventaire') setMode('mouvement');
     }
   }
