@@ -148,6 +148,10 @@
     .modal-confirm-actions { display: flex; gap: 10px; }
 
     /* LOGIN */
+    .login-pwd-wrapper { position: relative; width: 100%; }
+    .login-pwd-wrapper input { width: 100%; padding-right: 48px; }
+    .toggle-pwd { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; color: var(--muted); font-size: 18px; line-height: 1; transition: color .2s; }
+    .toggle-pwd:hover { color: var(--text); }
     .login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; gap: 24px; }
     .login-logo { font-size: 28px; font-weight: 800; letter-spacing: -1px; }
     .login-logo span { color: var(--accent); }
@@ -186,7 +190,10 @@
     <label class="login-label">Identifiant</label>
     <input type="text" class="login-input" id="login-id" placeholder="Votre identifiant" style="letter-spacing:normal;" autocomplete="username" />
     <label class="login-label" style="margin-top:12px;">Mot de passe</label>
-    <input type="password" class="login-input" id="login-pwd" placeholder="••••••••" autocomplete="current-password" />
+    <div class="login-pwd-wrapper">
+      <input type="password" class="login-input" id="login-pwd" placeholder="••••••••" autocomplete="current-password" />
+      <button type="button" class="toggle-pwd" onclick="togglePwd()" id="toggle-pwd-btn" tabindex="-1">👁</button>
+    </div>
     <div class="login-error" id="login-error">⚠️ Identifiant ou mot de passe incorrect</div>
     <button class="login-btn" id="login-btn" onclick="checkLogin()">Accéder</button>
   </div>
@@ -357,6 +364,19 @@
   ['click','touchstart','keydown','scroll'].forEach(evt => {
     document.addEventListener(evt, resetInactivityTimer, true);
   });
+
+  // ── TOGGLE MOT DE PASSE ──
+  function togglePwd() {
+    const input = document.getElementById('login-pwd');
+    const btn   = document.getElementById('toggle-pwd-btn');
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁';
+    }
+  }
 
   // ── GESTION DES RÔLES ──
   function appliquerRole() {
