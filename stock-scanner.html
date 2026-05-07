@@ -403,11 +403,19 @@
 
   // Vérifier si déjà connecté dans cette session
   window.addEventListener('load', () => {
+    // ── LOGIN TEMPORAIREMENT DÉSACTIVÉ POUR TESTS ──
+    // Pour réactiver : supprimer les 3 lignes ci-dessous et décommenter le bloc original
+    document.getElementById('login-overlay').style.display = 'none';
+    currentEmploye = 'Test';
+    // ── FIN BYPASS ──
+
+    /* BLOC ORIGINAL À RÉACTIVER :
     if (sessionStorage.getItem('logiwatt_auth') === '1') {
       document.getElementById('login-overlay').style.display = 'none';
       currentEmploye = sessionStorage.getItem('logiwatt_user') || '';
       resetInactivityTimer();
     }
+    */
   });
 
   let scanner = null;
@@ -588,7 +596,7 @@
     const payload = {
       reference: entry.ref,
       type_mouvement: entry.type,
-      quantite: entry.qty,
+      quantite: Number(entry.qty),
       employe: entry.employe,
       chantier: entry.chantier || '',
       commentaire: entry.note || '',
