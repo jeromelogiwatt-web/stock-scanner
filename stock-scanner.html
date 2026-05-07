@@ -358,6 +358,17 @@
     document.addEventListener(evt, resetInactivityTimer, true);
   });
 
+  // ── GESTION DES RÔLES ──
+  function appliquerRole() {
+    const tabInventaire = document.getElementById('tab-inventaire');
+    if (currentRole === 'admin') {
+      tabInventaire.style.display = 'block';
+    } else {
+      tabInventaire.style.display = 'none';
+      if (currentMode === 'inventaire') setMode('mouvement');
+    }
+  }
+
   async function checkLogin() {
     const id = document.getElementById('login-id').value.trim();
     const pwd = document.getElementById('login-pwd').value.trim();
