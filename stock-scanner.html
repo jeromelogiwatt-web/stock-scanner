@@ -361,10 +361,13 @@
   // ── GESTION DES RÔLES ──
   function appliquerRole() {
     const tabInventaire = document.getElementById('tab-inventaire');
+    const tabMouvement  = document.getElementById('tab-mouvement');
     if (currentRole === 'admin') {
       tabInventaire.style.display = 'block';
+      tabMouvement.style.gridColumn = '';
     } else {
       tabInventaire.style.display = 'none';
+      tabMouvement.style.gridColumn = '1 / -1';
       if (currentMode === 'inventaire') setMode('mouvement');
     }
   }
