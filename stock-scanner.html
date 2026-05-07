@@ -126,7 +126,7 @@
     .log-status.pending { background: var(--surface2); color: var(--muted); }
 
     /* DETAILS */
-    details { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    details { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: none; }
     summary { padding: 14px 16px; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); list-style: none; display: flex; align-items: center; justify-content: space-between; }
     summary::-webkit-details-marker { display: none; }
     summary::after { content: '⌄'; font-size: 16px; }
@@ -405,13 +405,6 @@
 
   // Vérifier si déjà connecté dans cette session
   window.addEventListener('load', () => {
-    // ── LOGIN TEMPORAIREMENT DÉSACTIVÉ POUR TESTS ──
-    // Pour réactiver : supprimer les 3 lignes ci-dessous et décommenter le bloc original
-    document.getElementById('login-overlay').style.display = 'none';
-    currentEmploye = 'Test';
-    // ── FIN BYPASS ──
-
-    /* BLOC ORIGINAL À RÉACTIVER :
     if (sessionStorage.getItem('logiwatt_auth') === '1') {
       document.getElementById('login-overlay').style.display = 'none';
       currentEmploye = sessionStorage.getItem('logiwatt_user') || '';
@@ -419,7 +412,6 @@
       resetInactivityTimer();
       appliquerRole();
     }
-    */
   });
 
   let scanner = null;
