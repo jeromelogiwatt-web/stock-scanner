@@ -212,7 +212,7 @@
       </div>
       <div>
         <label>URL Apps Script (CSV + Email)</label>
-        <input type="text" id="api-url-session" value="https://script.google.com/macros/s/AKfycbwIjgPYM8j6hmpkaGerb4DL0Poi8uuGrsj52liS-ZwmFvYnv1NLDXewYNIVPN5IG46P/exec" />
+        <input type="text" id="api-url-session" value="https://script.google.com/macros/s/AKfycbz0qoiK8xpetUqoFVNEBLM4Gng10qKg6oxXTP8L1eF5egg6apwf4S0-7-SI75MB4KIs/exec" />
       </div>
       <div class="api-note">✅ Les deux modes envoient vers Google Sheets via Make. Le webhook fin de session déclenche la génération du CSV.</div>
     </div>
@@ -585,43 +585,36 @@
     await envoyerWebhook(entry);
   }
 
-  // ── WEBHOOK ──
+  // ── APPS SCRIPT (form submission — pas de CORS) ──
   async function envoyerWebhook(entry) {
-    const urlMvt = document.getElementById('api-url').value.trim();
-    const urlInv = document.getElementById('api-url-inventaire').value.trim();
-    const webhookUrl = entry.type === 'inventaire' ? (urlInv || urlMvt) : urlMvt;
+    const appsScriptUrl = document.getElementById('api-url-session').value.trim();
 
-    if (!webhookUrl) { updateLogStatus(entry.id, 'err'); showToast('⚠️ URL webhook manquante', 'error'); return; }
+    if (!appsScriptUrl) { updateLogStatus(entry.id, 'err'); showToast('URL Apps Script manquante', 'error'); return; }
 
-    const payload = {
-      reference: entry.ref,
-      type_mouvement: entry.type,
-      quantite: Number(entry.qty),
-      employe: entry.employe,
-      chantier: entry.chantier || '',
-      commentaire: entry.note || '',
-      date: new Date().toISOString()
-    };
+    const formData = new FormData();
+    formData.append('reference',      entry.ref);
+    formData.append('type_mouvement', entry.type);
+    formData.append('quantite',       entry.qty);
+    formData.append('employe',        entry.employe);
+    formData.append('chantier',       entry.chantier || '');
+    formData.append('commentaire',    entry.note || '');
+    formData.append('date',           new Date().toISOString());
 
     try {
-      const res = await fetch(webhookUrl, {
+      await fetch(appsScriptUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        mode: 'no-cors',
+        body: formData
       });
-      if (res.ok) {
-        updateLogStatus(entry.id, 'ok');
-        const msg = entry.type === 'inventaire'
-          ? `📋 Inventaire — ${entry.ref} : ${entry.qty} unités`
-          : `✓ ${entry.employe} (${entry.type === 'entree' ? '+' : '-'}${entry.qty})`;
-        showToast(msg, entry.type === 'inventaire' ? 'info' : 'success');
-      } else {
-        updateLogStatus(entry.id, 'err');
-        showToast(`❌ Erreur webhook ${res.status}`, 'error');
-      }
+      updateLogStatus(entry.id, 'ok');
+      const sign = entry.type === 'entree' ? '+' : entry.type === 'sortie' ? '-' : '=';
+      const msg  = entry.type === 'inventaire'
+        ? `Inventaire ${entry.ref} : ${entry.qty} unités`
+        : `${sign}${entry.qty} — ${entry.employe}`;
+      showToast(msg, entry.type === 'inventaire' ? 'info' : 'success');
     } catch (err) {
       updateLogStatus(entry.id, 'err');
-      showToast('❌ Connexion impossible', 'error');
+      showToast('Connexion impossible', 'error');
     }
   }
 
